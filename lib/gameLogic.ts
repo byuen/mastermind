@@ -40,7 +40,7 @@ export function validateGuess(guess: (string | null)[], codeLength: number = 4):
  * @returns Array of FeedbackState representing the feedback (black, white, or empty)
  */
 export function calculateFeedback(guess: string[], secretCode: string[]): FeedbackState[] {
-  const feedback: FeedbackState[] = [];
+  const feedback: (FeedbackState | null)[] = [];
   const guessCopy = [...guess];
   const codeCopy = [...secretCode];
   const codeUsedIndices = new Set<number>();
@@ -49,8 +49,8 @@ export function calculateFeedback(guess: string[], secretCode: string[]): Feedba
   for (let i = 0; i < guessCopy.length; i++) {
     if (guessCopy[i] === codeCopy[i]) {
       feedback.push('black');
-      guessCopy[i] = null; // Mark as used
-      codeCopy[i] = null; // Mark as used
+      guessCopy[i] = ''; // Mark as used
+      codeCopy[i] = ''; // Mark as used
       codeUsedIndices.add(i);
     } else {
       feedback.push(null); // Placeholder for second pass
@@ -59,14 +59,14 @@ export function calculateFeedback(guess: string[], secretCode: string[]): Feedba
 
   // Second pass: Find color matches in wrong positions (white pegs)
   for (let i = 0; i < guessCopy.length; i++) {
-    if (feedback[i] === null && guessCopy[i] !== null) {
+    if (feedback[i] === null && guessCopy[i] !== '') {
       // Look for this color in the code (not already matched in exact position)
       const colorIndex = codeCopy.findIndex(
-        (color, idx) => color === guessCopy[i] && !codeUsedIndices.has(idx) && color !== null
+        (color, idx) => color === guessCopy[i] && !codeUsedIndices.has(idx) && color !== ''
       );
       if (colorIndex !== -1) {
         feedback[i] = 'white';
-        codeCopy[colorIndex] = null; // Mark as used
+        codeCopy[colorIndex] = ''; // Mark as used
         codeUsedIndices.add(colorIndex);
       } else {
         feedback[i] = 'empty';
@@ -77,7 +77,7 @@ export function calculateFeedback(guess: string[], secretCode: string[]): Feedba
   }
 
   // Sort feedback: black first, then white, then empty (traditional Mastermind order)
-  return feedback.sort((a, b) => {
+  return feedback.filter((f): f is FeedbackState => f !== null).sort((a, b) => {
     const order = { black: 0, white: 1, empty: 2 };
     return order[a] - order[b];
   });
